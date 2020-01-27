@@ -1,7 +1,7 @@
 # NeuralNetwork
 A simple neural network that is written in C++
 
-##Compiling
+## Compiling
 ```Compiling
 mkdir build
 cd build
