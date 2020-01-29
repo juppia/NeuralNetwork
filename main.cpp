@@ -1,16 +1,16 @@
+#define BOOST_UBLAS_NDEBUG
 // Copyright
-// by Gordey Balaban 27.01.2020
+// by Gordey Balaban 29.01.2020
 
 #include <cmath>
 #include <ctime>
 #include <cstring>
 #include "imgReader.h"
+#include <boost/numeric/ublas/matrix.hpp>
+#include <boost/numeric/ublas/io.hpp>
+#include <boost/numeric/ublas/vector.hpp>
 
-const float EXP = 2.718281828f;
-
-float sigmoid(float x) {
-	return 1.0f / (1.0f + pow(EXP, -x));
-}
+using namespace boost::numeric::ublas;
 
 float relu(float x){
     if(x > 1){
@@ -25,29 +25,10 @@ float relu(float x){
 }
 
 template<typename t>
-std::vector<t> sigmoid(std::vector<t> in){
-    std::vector<t> r = in;
-    for(auto& i : r){
-        i = sigmoid(i);
-    }
-    return r;
-}
-
-template<typename t>
-std::vector<t> relu(std::vector<t> in){
-    std::vector<t> r = in;
+vector<t> relu(vector<t> in){
+    vector<t> r = in;
     for(auto& i : r){
         i = relu(i);
-    }
-    return r;
-}
-
-template<typename T>
-std::vector<T> activation(std::vector<T> in){
-    std::vector<T> r = in;
-    for(auto& i : r){
-        T a = sigmoid(i);
-        i = a * (1 -a);
     }
     return r;
 }
@@ -59,100 +40,6 @@ float derivative(float x){
     else
         return 1.0f;
 }
-
-float activation(float x) {
-	float a = sigmoid(x);
-	return a * (1 - a);
-}
-
-namespace Math {
-	// Транспонирование матрици
-	template<typename T>
-	std::vector<std::vector<T>> Transpose(std::vector<std::vector<T>> a)
-	{
-		std::vector<std::vector<T>> result;
-		size_t aS = a.size();
-		size_t bS = a[0].size();
-		result.resize(bS);
-		for (auto& i : result) {
-			i.resize(aS);
-		}
-		for (size_t i = 0; i < a.size(); i++) {
-			for (size_t j = 0; j < a[i].size(); j++) {
-				result[j][i] = a[i][j];
-			}
-		}
-		return result;
-	}
-
-	// Скалярное произведение векторов
-	template<typename T>
-	T Multiply(std::vector<T> a, std::vector<T> b)
-	{
-		T result = 0;
-		if (a.size() != b.size()) {
-			std::cout << "Error: cannot multiply vectors with different sizes or you forgot to transpose a matrix\n";
-			return 0;
-		}
-		for (size_t i = 0; i < a.size(); i++) {
-			result += a[i] * b[i];
-		}
-		return result;
-	}
-
-	// Умножение вектора на число
-	template<typename T>
-	std::vector<T> Multiply(std::vector<T> a, T b)
-	{
-		std::vector<T> result = a;
-		for (size_t i = 0; i < a.size(); i++) {
-			result[i] *= b;
-		}
-		return result;
-	}
-
-	// Умножение матрици 'a' на вектор 'b'
-	template<typename T>
-	std::vector<T> Multiply(std::vector<std::vector<T>> a, std::vector<T> b)
-	{
-	    if(a[0].size() != b.size()){
-            std::cout << "[Matrix by vector] error\n";
-	    }
-		std::vector<T> result(a.size());
-		for (size_t i = 0; i < a.size(); i++) {
-			result[i] = Math::Multiply(a[i], b);
-		}
-		return result;
-	}
-
-	// Сложение векторов
-	template<typename T>
-	std::vector<T> Plus(std::vector<T> a, std::vector<T> b)
-	{
-		if (a.size() != b.size()) {
-			std::cout << "[+] Error: cannot add vectors with different sizes\n";
-		}
-		std::vector<T> result(a.size());
-		for (size_t i = 0; i < a.size(); i++) {
-			result[i] = a[i] + b[i];
-		}
-		return result;
-	}
-
-    // Вычитание векторов
-	template<typename T>
-	std::vector<T> Minus(std::vector<T> a, std::vector<T> b)
-	{
-		if (a.size() != b.size()) {
-			std::cout << "[+] Error: cannot add vectors with different sizes\n";
-		}
-		std::vector<T> result(a.size());
-		for (size_t i = 0; i < a.size(); i++) {
-			result[i] = a[i] - b[i];
-		}
-		return result;
-	}
-};
 
 int main(int argc, char** argv) {
 	setlocale(LC_ALL, "ru_RU");
@@ -194,35 +81,31 @@ int main(int argc, char** argv) {
     }
 
     // веса
-    std::vector<std::vector<float>> weights_in;
-    std::vector<std::vector<float>> weights_h;
-    std::vector<std::vector<float>> weights_out;
+    matrix<float> weights_in(3, hl1);
+    matrix<float> weights_h(hl1, hl2);
+    matrix<float> weights_out(hl2, 3);
 
     /* Входящий слой: 3 нейрона
      * первый скрытый слой: hl1 нейронов
      * второй скрытый слой: hl2 нейронов
      * выходной слой: 3 нейрона
     */
-    weights_in.resize(3, std::vector<float>(hl1));
-    weights_h.resize(hl1, std::vector<float>(hl2));
-    weights_out.resize(hl2, std::vector<float>(3));
-
     // инициализируем веса случайными значениями от -1 до 1
-    for(size_t i = 0; i < weights_in.size(); i++){
-        for(size_t j = 0; j < weights_in[i].size(); j++){
-		    weights_in[i][j] = ((static_cast<float>(rand()) / static_cast<float>(RAND_MAX)) * 2) - 1;
+    for(size_t i = 0; i < weights_in.size1(); i++){
+        for(size_t j = 0; j < weights_in.size2(); j++){
+		    weights_in(i, j) = ((static_cast<float>(rand()) / static_cast<float>(RAND_MAX)) * 2) - 1;
         }
     }
 
-    for(size_t i = 0; i < weights_h.size(); i++){
-        for(size_t j = 0; j < weights_h[i].size(); j++){
-		    weights_h[i][j] = ((static_cast<float>(rand()) / static_cast<float>(RAND_MAX)) * 2) - 1;
+    for(size_t i = 0; i < weights_h.size1(); i++){
+        for(size_t j = 0; j < weights_h.size2(); j++){
+		    weights_h(i, j) = ((static_cast<float>(rand()) / static_cast<float>(RAND_MAX)) * 2) - 1;
         }
     }
 
-    for(size_t i = 0; i < weights_out.size(); i++){
-        for(size_t j = 0; j < weights_out[i].size(); j++){
-		    weights_out[i][j] = ((static_cast<float>(rand()) / static_cast<float>(RAND_MAX)) * 2) - 1;
+    for(size_t i = 0; i < weights_out.size1(); i++){
+        for(size_t j = 0; j < weights_out.size2(); j++){
+		    weights_out(i, j) = ((static_cast<float>(rand()) / static_cast<float>(RAND_MAX)) * 2) - 1;
         }
     }
 
@@ -237,44 +120,49 @@ int main(int argc, char** argv) {
         //fflush(stdout);
         for(int y = 0; y < height; y++){
             for(int x = 0; x < width; x++){
-                std::vector<float> pixelInData = {inImg[y][x][0]/(float)255,
-                                                inImg[y][x][1]/(float)255,
-                                                inImg[y][x][2]/(float)255};
+                vector<float> pixelInData(3);
+                pixelInData(0) = inImg[y][x][0]/(float)255;
+                pixelInData(1) = inImg[y][x][1]/(float)255;
+                pixelInData(2) = inImg[y][x][2]/(float)255;
 
-                std::vector<float> pixelOutData = {outImg[y][x][0]/(float)255,
-                                                outImg[y][x][1]/(float)255,
-                                                outImg[y][x][2]/(float)255};
+                vector<float> pixelOutData(3);
+                pixelOutData(0) = outImg[y][x][0]/(float)255;
+                pixelOutData(1) = outImg[y][x][1]/(float)255;
+                pixelOutData(2) = outImg[y][x][2]/(float)255;
 
-                auto t_in = Math::Transpose(weights_in);
-                auto t_h = Math::Transpose(weights_h);
-                auto t_out = Math::Transpose(weights_out);
-                std::vector<float> hiddenResult1 = Math::Multiply(t_in, pixelInData);
-                std::vector<float> hiddenResult2 = relu(Math::Multiply(t_h, hiddenResult1));
-                std::vector<float> result = relu(Math::Multiply(t_out, hiddenResult2));
-                auto err = Math::Minus(pixelOutData, result);
-                allErr[0] += pow(err[0], 2);
-                allErr[1] += pow(err[1], 2);
-                allErr[2] += pow(err[2], 2);
+                auto t_in = trans(weights_in);
+                auto t_h = trans(weights_h);
+                auto t_out = trans(weights_out);
+                vector<float> hiddenResult1 = prod(t_in, pixelInData);
+                vector<float> hiddenResult2 = prod(t_h, hiddenResult1);
+                hiddenResult2 = relu(hiddenResult2);
+
+                vector<float> result = prod(t_out, hiddenResult2);
+                result = relu(result);
+                vector<float> err = pixelOutData - result;
+                allErr[0] += pow(err(0), 2);
+                allErr[1] += pow(err(1), 2);
+                allErr[2] += pow(err(2), 2);
                 oo++;
 
-                auto hiddenErr2 = Math::Multiply(weights_out, err);
-                auto hiddenErr1 = Math::Multiply(weights_h, hiddenErr2);
+                vector<float> hiddenErr2 = prod(weights_out, err);
+                vector<float> hiddenErr1 = prod(weights_h, hiddenErr2);
 
-                for(size_t f = 0; f < weights_in.size(); f++){
-                    for(size_t b = 0; b < weights_in[f].size(); b++){
-                        weights_in[f][b] += learning * hiddenErr1[b] * pixelInData[f] * derivative(hiddenResult1[b]);
+                for(size_t f = 0; f < weights_in.size1(); f++){
+                    for(size_t b = 0; b < weights_in.size2(); b++){
+                        weights_in(f, b) += learning * hiddenErr1(b) * pixelInData(f) * derivative(hiddenResult1(b));
                     }
                 }
 
-                for(size_t f = 0; f < weights_h.size(); f++){
-                    for(size_t b = 0; b < weights_h[f].size(); b++){
-                        weights_h[f][b] += learning * hiddenErr2[b] * hiddenResult1[f] * derivative(hiddenResult2[b]);
+                for(size_t f = 0; f < weights_h.size1(); f++){
+                    for(size_t b = 0; b < weights_h.size2(); b++){
+                        weights_h(f, b) += learning * hiddenErr2(b) * hiddenResult1(f) * derivative(hiddenResult2(b));
                     }
                 }
 
-                for(size_t f = 0; f < weights_out.size(); f++){
-                    for(size_t b = 0; b < weights_out[f].size(); b++){
-                        weights_out[f][b] += learning * err[b] * hiddenResult2[f] * derivative(result[b]);
+                for(size_t f = 0; f < weights_out.size1(); f++){
+                    for(size_t b = 0; b < weights_out.size2(); b++){
+                        weights_out(f, b) += learning * err(b) * hiddenResult2(f) * derivative(result(b));
                     }
                 }
             }
@@ -288,23 +176,28 @@ int main(int argc, char** argv) {
     resultImg.resize(height, std::vector<std::vector<int>>(width, std::vector<int>(3)));
     for(int y = 0; y < height; y++){
         for(int x = 0; x < width; x++){
-            std::vector<float> pixelInData = {inImg[y][x][0]/(float)255,
-                                            inImg[y][x][1]/(float)255,
-                                            inImg[y][x][2]/(float)255};
+            vector<float> pixelInData(3);
+            pixelInData(0) = inImg[y][x][0]/(float)255;
+            pixelInData(1) = inImg[y][x][1]/(float)255;
+            pixelInData(2) = inImg[y][x][2]/(float)255;
 
-            std::vector<float> pixelOutData(3);
+            vector<float> pixelOutData(3);
+            pixelOutData(0) = outImg[y][x][0]/(float)255;
+            pixelOutData(1) = outImg[y][x][1]/(float)255;
+            pixelOutData(2) = outImg[y][x][2]/(float)255;
 
-            auto t_in = Math::Transpose(weights_in);
-            auto t_h = Math::Transpose(weights_h);
-            auto t_out = Math::Transpose(weights_out);
+            auto t_in = trans(weights_in);
+            auto t_h = trans(weights_h);
+            auto t_out = trans(weights_out);
+            vector<float> hiddenResult1 = prod(t_in, pixelInData);
+            vector<float> hiddenResult2 = prod(t_h, hiddenResult1);
+            hiddenResult2 = relu(hiddenResult2);
+            vector<float> result = prod(t_out, hiddenResult2);
+            result = relu(result);
 
-            std::vector<float> hiddenResult1 = Math::Multiply(t_in, pixelInData);
-            std::vector<float> hiddenResult2 = relu(Math::Multiply(t_h, hiddenResult1));
-            std::vector<float> result = relu(Math::Multiply(t_out, hiddenResult2));
-
-            resultImg[y][x][0] = static_cast<int>(result[0]*255);
-            resultImg[y][x][1] = static_cast<int>(result[1]*255);
-            resultImg[y][x][2] = static_cast<int>(result[2]*255);
+            resultImg[y][x][0] = static_cast<int>(result(0)*255);
+            resultImg[y][x][1] = static_cast<int>(result(1)*255);
+            resultImg[y][x][2] = static_cast<int>(result(2)*255);
             if(resultImg[y][x][0] < 0)
                 resultImg[y][x][0] = 0;
             if(resultImg[y][x][1] < 0)
