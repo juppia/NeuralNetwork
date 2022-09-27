@@ -11,7 +11,7 @@ make
 
 ## Usage
 
---help: is help page
+--help: shows help
 
 hiddenLayer1(int) - number of a neurons in the first hidden layer
 
