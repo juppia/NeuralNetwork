@@ -13,9 +13,9 @@ make
 
 --help: shows help
 
-hiddenLayer1(int) - number of a neurons in the first hidden layer
+hiddenLayer1(int) - number of neurons in the first hidden layer
 
-hiddenLayer2(int) - number of a neurons in the second hidden layer
+hiddenLayer2(int) - number of neurons in the second hidden layer
 
 input_learning_file(char*) - input filename that will be used in the learning process
 
